@@ -36,18 +36,23 @@
 #include "packer.h"
 #include "pefile.h"
 #include "p_w64pe_amd64.h"
+#include "p_w64pe_arm64.h"
 #define WANT_EHDR_ENUM 1
 #include "p_elf_enum.h"
 #include "linker.h"
 
 static const CLANG_FORMAT_DUMMY_STATEMENT
 #include "stub/amd64-win64.pe.h"
+#include "stub/arm64-win64.pe.h"
 
 /*************************************************************************
 //
 **************************************************************************/
 
-PackW64PeAmd64::PackW64PeAmd64(InputFile *f) : super(f) { use_stub_relocs = false; }
+PackW64PeAmd64::PackW64PeAmd64(InputFile *f) : super(f) {
+    use_stub_relocs = false;
+    hw_machine = IMAGE_FILE_MACHINE_AMD64;
+}
 
 PackW64PeAmd64::~PackW64PeAmd64() noexcept {}
 
@@ -76,6 +81,7 @@ tribool PackW64PeAmd64::canPack() {
     return true;
 }
 
+// clang-format off
 void PackW64PeAmd64::buildLoader(const Filter *ft) {
     // recompute tlsindex (see pack() below)
     unsigned tmp_tlsindex = tlsindex;
@@ -85,7 +91,11 @@ void PackW64PeAmd64::buildLoader(const Filter *ft) {
         tmp_tlsindex = 0;
 
     // prepare loader
-    initLoader(EM_AMD64, stub_amd64_win64_pe, sizeof(stub_amd64_win64_pe), 2);
+    if (IMAGE_FILE_MACHINE_ARM64 == hw_machine)
+        initLoader(EM_ARM64, stub_arm64_win64_pe, sizeof(stub_arm64_win64_pe), 2);
+    else
+        initLoader(EM_AMD64, stub_amd64_win64_pe, sizeof(stub_amd64_win64_pe), 2);
+
     addLoader("START");
     if (ih.entry && isdll)
         addLoader("PEISDLL0");
@@ -114,15 +124,23 @@ void PackW64PeAmd64::buildLoader(const Filter *ft) {
         addLoader("PEFILTER49");
     }
     if (soimport)
-        addLoader("PEIMPORT", importbyordinal ? "PEIBYORD" : "", kernel32ordinal ? "PEK32ORD" : "",
-                  importbyordinal ? "PEIMORD1" : "", "PEIMPOR2", isdll ? "PEIERDLL" : "PEIEREXE",
-                  "PEIMDONE");
+        addLoader("PEIMPORT",
+            importbyordinal ? "PEIBYORD" : "",
+            kernel32ordinal ? "PEK32ORD" : "",
+            importbyordinal ? "PEIMORD1" : "",
+            "PEIMPOR2",
+            isdll ? "PEIERDLL" : "PEIEREXE",
+            "PEIMDONE");
     if (sorelocs) {
         addLoader(soimport == 0 || soimport + cimports != crelocs ? "PERELOC1" : "PERELOC2",
-                  "PERELOC3", big_relocs ? "REL64BIG" : "", "RELOC64J");
+            "PERELOC3",
+            big_relocs ? "REL64BIG" : "",
+            "RELOC64J");
         if (0) {
-            addLoader(big_relocs & 6 ? "PERLOHI0" : "", big_relocs & 4 ? "PERELLO0" : "",
-                      big_relocs & 2 ? "PERELHI0" : "");
+            addLoader(
+                big_relocs & 6 ? "PERLOHI0" : "",
+                big_relocs & 4 ? "PERELLO0" : "",
+                big_relocs & 2 ? "PERELHI0" : "");
         }
     }
     if (use_dep_hack)
@@ -149,6 +167,7 @@ void PackW64PeAmd64::buildLoader(const Filter *ft) {
 
     addLoader("IDENTSTR,UPX1HEAD");
 }
+// clang-format on
 
 bool PackW64PeAmd64::needForceOption() const {
     // return true if we need `--force` to pack this file
@@ -208,13 +227,12 @@ void PackW64PeAmd64::defineSymbols(unsigned ncsection, unsigned upxsection, unsi
         linker->defineSymbol("compressed_imports", cimports);
     }
 
-    if (M_IS_LZMA(ph.method)) {
-        if (linker->findSymbol("lzma_c_len", false)) {
-            linker->defineSymbol("lzma_c_len", ph.c_len - 2);
-        }
-        if (linker->findSymbol("lzma_u_len", false)) {
-            linker->defineSymbol("lzma_u_len", ph.u_len);
-        }
+    int const skip_len = M_IS_LZMA(ph.method) ? 0 : 5;
+    if (linker->findSymbol(skip_len + "lzma_c_len", false)) {
+        linker->defineSymbol(skip_len + "lzma_c_len", ph.c_len - 2 * M_IS_LZMA(ph.method));
+    }
+    if (linker->findSymbol(skip_len + "lzma_u_len", false)) {
+        linker->defineSymbol(skip_len + "lzma_u_len", ph.u_len);
     }
     linker->defineSymbol("filter_buffer_start", ih.codebase - rvamin);
 

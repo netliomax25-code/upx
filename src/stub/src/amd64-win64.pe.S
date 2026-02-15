@@ -101,7 +101,7 @@ section         PETLSHAK
                 push    rax
 
 section         PEMAIN02
-                push    rdi
+                push    rdi  // MATCH_15  vaddr of uncompressed
 section         PEMAIN03
 
 // =============
@@ -220,7 +220,7 @@ section         LZMA_TAIL
                 pop     rax
 // =============
 section         PEMAIN10
-                pop     rsi             // load vaddr
+                pop     rsi             // MATCH_15  load vaddr
 
 section         PETLSHAK2               // restore the TLS index
                 pop     rdi

@@ -42,7 +42,7 @@ static const CLANG_FORMAT_DUMMY_STATEMENT
 //
 **************************************************************************/
 
-PackW32PeI386::PackW32PeI386(InputFile *f) : super(f) {}
+PackW32PeI386::PackW32PeI386(InputFile *f) : super(f) { hw_machine = IMAGE_FILE_MACHINE_I386; }
 
 PackW32PeI386::~PackW32PeI386() noexcept {}
 

@@ -27,12 +27,19 @@
 
 #pragma once
 
+#include "conf.h"
+#include "file.h"
+#include "filter.h"
+#include "packer.h"
+#include "pefile.h"
+#include "p_w64pe_amd64.h"
+
 /*************************************************************************
 // win64/arm64
 **************************************************************************/
 
-class PackW64PeArm64 : public PeFile64 {
-    typedef PeFile64 super;
+class PackW64PeArm64 : public PackW64PeAmd64 {
+    typedef PackW64PeAmd64 super;
 
 public:
     explicit PackW64PeArm64(InputFile *f);
@@ -44,16 +51,11 @@ public:
     virtual const int *getFilters() const override;
 
     virtual bool needForceOption() const override;
-    virtual void defineSymbols(unsigned ncsection, unsigned upxsection, unsigned sizeof_oh,
-                               unsigned isize_isplit, unsigned s1addr) override;
     virtual void setOhDataBase(const pe_section_t *) override {}
-    virtual void setOhHeaderSize(const pe_section_t *osection) override;
-    virtual void pack(OutputFile *fo) override;
 
     virtual tribool canPack() override;
 
 protected:
-    virtual void buildLoader(const Filter *ft) override;
     virtual Linker *newLinker() const override;
 };
 

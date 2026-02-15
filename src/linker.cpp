@@ -683,6 +683,11 @@ void ElfLinkerArm64LE::relocate1(const Relocation *rel, byte *location, upx_uint
             set_le32(location, get_le32(location) + value);
         else if (!strcmp(type, "64"))
             set_le64(location, get_le64(location) + value);
+    } else if (!strcmp(type, "LD_PREL_LO19")) {
+        value -= rel->section->offset + rel->offset;
+        upx_uint32_t const m19 = ~(~0u << 19);
+        upx_uint32_t w = get_le32(location);
+        set_le32(location, (w & ~((m19 << 5))) | ((m19 & (value >> 2)) << 5));
     } else if (!strcmp(type, "ADR_PREL_LO21")) {
         value -= rel->section->offset + rel->offset;
         upx_uint32_t const m19 = ~(~0u << 19);

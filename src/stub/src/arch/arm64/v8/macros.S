@@ -75,9 +75,17 @@ NBPW= 8
 .endm
 
 .macro          sync_cache  // In: x0= lo; x1= hi; uses x2,x3,x4
+// 2026-02-16: Win11 says that 'mrs' is an illegal instruction (code c000001d).
+// Therefore we cannot know that no action is needed (bits 28 and 29)
+// and we cannot determine the actual line sizes.
+// So we assume 64 bytes, which supposedly is common (8x 8 bytes in DRAM).
+#if 0  //{ impeded because Win11 does not allow 'mrs'
         mrs x3, ctr_el0
         tbnz w3, #28, 1f  // not needed
         ubfx x2, x3, #16, #4  // -2+ log2(dline_size)
+#else //}{
+        mov x2,#-2 + 6  // assume 64==sizeof(dline)
+#endif  //{
         mov x4, #-4  // mask starts at 2**2
         lsl x4, x4, x2  // Dline_mask
         and x2, x0, x4  // round down
@@ -91,8 +99,12 @@ NBPW= 8
 1:
         dsb ish  // Data Sync Barrier, Inner SHarable Read+write
 
+#if 0  //{ impeded because Win11 does not allow 'mrs'
         tbnz w3, #29, 3f  // not needed
         and x3, x3, #0xf  // -2+ log2(iline_size)
+#else  //}{
+        mov x3,#-2 + 6  // assume 64==sizeof(iline)
+#endif  //}
         mov x2, #-4  // mask starts at 2**2
         lsl x2, x2, x3  // Iline_mask
         and x0, x0, x2  // round down

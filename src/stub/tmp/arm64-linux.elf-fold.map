@@ -56,8 +56,8 @@ SYSCALLS        0x0000000000000000      0x118
                 0x00000000000000f4                memcpy
                 0x0000000000000108                memset
 
-EXP_HEAD        0x0000000000000000      0x104
- EXP_HEAD       0x0000000000000000      0x104 tmp/arm64-expand.o
+EXP_HEAD        0x0000000000000000       0xf8
+ EXP_HEAD       0x0000000000000000       0xf8 tmp/arm64-expand.o
                 0x0000000000000000                f_expand
 
 EXP_TAIL        0x0000000000000000       0x54

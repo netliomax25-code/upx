@@ -62,7 +62,7 @@ off  .req w5
 
 #if defined(WINDOWS_BACK) || !defined(DAISY_CHAIN)  //{
 eof_n2b:
-        POP4(x1,x3,x4, lr)  // x1= eof_src; r3= orig_dst; r4= plen_dst
+        POP4(x1,x3,x4, lr)  // MATCH_90  x1= eof_src; r3= orig_dst; r4= plen_dst
         SUB2(src,x1)  // 0 if actual src length equals expected length
         SUB2(dst,x3)  // actual dst length
         str dstw,[x4]

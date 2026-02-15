@@ -31,7 +31,7 @@
 // win64/pe (amd64)
 **************************************************************************/
 
-class PackW64PeAmd64 final : public PeFile64 {
+class PackW64PeAmd64 : public PeFile64 {
     typedef PeFile64 super;
 
 public:

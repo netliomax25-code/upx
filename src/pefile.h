@@ -35,6 +35,7 @@ class PeFile : public Packer {
     typedef Packer super;
 public:
     virtual int getVersion() const override { return 13; }
+    int hw_machine;
 protected:
     class Interval;
     class Reloc;

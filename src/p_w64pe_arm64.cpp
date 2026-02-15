@@ -35,8 +35,8 @@
 #include "p_w64pe_arm64.h"
 #include "linker.h"
 
-// static const CLANG_FORMAT_DUMMY_STATEMENT
-// #include "stub/arm64-win64.pe.h"
+static const CLANG_FORMAT_DUMMY_STATEMENT
+#include "stub/arm64-win64.pe.h"
 
 /*************************************************************************
 //
@@ -44,6 +44,7 @@
 
 PackW64PeArm64::PackW64PeArm64(InputFile *f) : super(f) {
     // use_stub_relocs = false;
+    hw_machine = IMAGE_FILE_MACHINE_ARM64;
 }
 
 Linker *PackW64PeArm64::newLinker() const { return new ElfLinkerArm64LE; }
@@ -65,41 +66,14 @@ tribool PackW64PeArm64::canPack() {
     checkMachine(ih.cpu);
     if (ih.cpu != IMAGE_FILE_MACHINE_ARM64)
         return false;
-    throwCantPack("win64/arm64 is not yet implemented");
     return true;
-}
-
-void PackW64PeArm64::buildLoader(const Filter *ft) {
-    UNUSED(ft);
-    throwCantPack("not yet implemented");
 }
 
 bool PackW64PeArm64::needForceOption() const {
     // return true if we need `--force` to pack this file
     bool r = false;
-    throwCantPack("not yet implemented");
+    throwCantPack("not yet implemented: PackW64PeArm64::needForceOption");
     return r;
-}
-
-void PackW64PeArm64::defineSymbols(unsigned ncsection, unsigned upxsection, unsigned sizeof_oh,
-                                   unsigned ic, unsigned s1addr) {
-    UNUSED(ncsection);
-    UNUSED(upxsection);
-    UNUSED(sizeof_oh);
-    UNUSED(ic);
-    UNUSED(s1addr);
-    throwCantPack("not yet implemented");
-}
-
-void PackW64PeArm64::setOhHeaderSize(const pe_section_t *osection) {
-    // SizeOfHeaders
-    UNUSED(osection);
-    throwCantPack("not yet implemented");
-}
-
-void PackW64PeArm64::pack(OutputFile *fo) {
-    UNUSED(fo);
-    throwCantPack("not yet implemented");
 }
 
 /*************************************************************************
