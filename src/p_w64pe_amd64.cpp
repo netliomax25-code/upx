@@ -228,11 +228,11 @@ void PackW64PeAmd64::defineSymbols(unsigned ncsection, unsigned upxsection, unsi
     }
 
     int const skip_len = M_IS_LZMA(ph.method) ? 0 : 5;
-    if (linker->findSymbol(skip_len + "lzma_c_len", false)) {
-        linker->defineSymbol(skip_len + "lzma_c_len", ph.c_len - 2 * M_IS_LZMA(ph.method));
+    if (linker->findSymbol(&"lzma_c_len"[skip_len], false)) {
+        linker->defineSymbol(&"lzma_c_len"[skip_len], ph.c_len - 2 * M_IS_LZMA(ph.method));
     }
-    if (linker->findSymbol(skip_len + "lzma_u_len", false)) {
-        linker->defineSymbol(skip_len + "lzma_u_len", ph.u_len);
+    if (linker->findSymbol(&"lzma_u_len"[skip_len], false)) {
+        linker->defineSymbol(&"lzma_u_len"[skip_len], ph.u_len);
     }
     linker->defineSymbol("filter_buffer_start", ih.codebase - rvamin);
 
