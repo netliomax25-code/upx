@@ -2271,8 +2271,9 @@ unsigned PeFile::readSections(unsigned objs, unsigned usize, unsigned ih_fileali
     unsigned ic, jc, overlaystart = 0;
     ibuf.clear(0, usize);
     for (ic = jc = 0; ic < objs; ic++) {
-        if (isection[ic].rawdataptr && overlaystart < isection[ic].rawdataptr + isection[ic].size)
-            overlaystart = ALIGN_UP(isection[ic].rawdataptr + isection[ic].size, ih_filealign);
+        unsigned const raw_top = isection[ic].rawdataptr + isection[ic].size;
+        if (isection[ic].rawdataptr && overlaystart < raw_top)
+            overlaystart = ALIGN_UP(raw_top, ih_filealign);
         if (isection[ic].vsize == 0)
             isection[ic].vsize = isection[ic].size;
         if ((isection[ic].flags & IMAGE_SCN_CNT_UNINITIALIZED_DATA) ||
@@ -2280,7 +2281,7 @@ unsigned PeFile::readSections(unsigned objs, unsigned usize, unsigned ih_fileali
             // holes.add_interval(isection[ic].vaddr, isection[ic].vsize);
             continue;
         }
-        if (isection[ic].vaddr + isection[ic].size > usize)
+        if (isection[ic].vaddr + isection[ic].size > ALIGN_UP(usize, ih_filealign))
             throwCantPack("section size problem");
         if (!isrtm && ((isection[ic].flags & (IMAGE_SCN_MEM_WRITE | IMAGE_SCN_MEM_SHARED)) ==
                        (IMAGE_SCN_MEM_WRITE | IMAGE_SCN_MEM_SHARED)))
