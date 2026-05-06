@@ -120,6 +120,9 @@ void PackW64PeAmd64::buildLoader(const Filter *ft) {
     if (sorelocs) {
         addLoader(soimport == 0 || soimport + cimports != crelocs ? "PERELOC1" : "PERELOC2",
                   "PERELOC3", big_relocs ? "REL64BIG" : "", "RELOC64J");
+        if (didata) {
+            addLoader("PERELOC5");
+        }
         if (0) {
             addLoader(big_relocs & 6 ? "PERLOHI0" : "", big_relocs & 4 ? "PERELLO0" : "",
                       big_relocs & 2 ? "PERELHI0" : "");
@@ -187,13 +190,13 @@ void PackW64PeAmd64::defineSymbols(unsigned ncsection, unsigned upxsection, unsi
         // rva of the most significant byte of member "flags" in section "UPX0"
         const unsigned swri = pe_offset + sizeof_oh + sizeof(pe_section_t) - 1;
         // make sure we only touch the minimum number of pages
-        const unsigned addr = 0u - rvamin + swri;
+        const unsigned addr = 0u - rvamin + swri;   // assumes headers are mapped at RVA 0
         linker->defineSymbol("swri", addr & 0xfff); // page offset
         // check whether osection[0].flags and osection[1].flags
         // are on the same page
         linker->defineSymbol(
             "vp_size", ((addr & 0xfff) + 0x28 >= 0x1000) ? 0x2000 : 0x1000); // 2 pages or 1 page
-        linker->defineSymbol("vp_base", addr & ~0xfff);                      // page mask
+        linker->defineSymbol("vp_base", addr & ~0xfff); // pages below rvamin (usually 1 page)
         linker->defineSymbol("VirtualProtect", ilinkerGetAddress("kernel32.dll", "VirtualProtect"));
     }
     linker->defineSymbol("start_of_relocs", crelocs);
@@ -237,6 +240,12 @@ void PackW64PeAmd64::defineSymbols(unsigned ncsection, unsigned upxsection, unsi
         linker->defineSymbol("tls_module_base", 0u - rvamin);
     }
 
+    if (didata) {
+        linker->defineSymbol("di_ptr", IDADDR(PEDIR_BASERELOC));
+        linker->defineSymbol("didata", didata);
+        unsigned pos = pe_offset + ((char *) &ih.ddirs[PEDIR_BASERELOC] - (char *) &ih);
+        linker->defineSymbol("ih_BaseReloc", pos);
+    }
     linker->defineSymbol("START", upxsection);
 }
 

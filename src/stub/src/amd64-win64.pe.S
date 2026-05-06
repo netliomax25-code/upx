@@ -65,6 +65,11 @@
 
 .intel_syntax noprefix
 
+PAGE_READWRITE = 4
+vp_stack = 4*8  // space to store 4 parameters (MSVCRT convention?)
+IMAGE_SCN_MEM_WRITE = 0x80000000
+sz_pe_section_t = 8 + 4*4 + 12 + 4  // 0x28
+
 // =============
 // ============= ENTRY POINT
 // =============
@@ -360,7 +365,31 @@ section         REL64BIG
 section         RELOC64J
                 jmp     SHORT(reloc_add)
 reloc_endx:
+section         PERELOC5
+// same framework as PEDEPHAK
+                mov     rbp, [rip + VirtualProtect]
+                lea     rdi, [rsi - 0x1000]     // page of OptionalHdr
+                mov     ebx, 0x1000             // the whole page
 
+                push    rax                     // provide 8 bytes stack
+                mov     r9, rsp                 // &oldProtect  (arg4)
+                push PAGE_READWRITE; pop r8  // (arg3) 2 bytes shorter than "mov r8d, 4"
+                mov     edx, ebx                // size (arg2)
+                mov     rcx, rdi                // address (arg1)
+                sub     rsp, vp_stack
+                call    rbp                     // VirtualProtect
+
+                mov eax,IMM32(di_ptr)
+                mov [ih_BaseReloc + rdi],eax
+                mov [rax],IMM32(didata)
+
+                lea     r9, [rsp + vp_stack]
+                movq    r8, [r9]                // original protection
+                mov     edx, ebx
+                mov     rcx, rdi
+
+                call    rbp
+                add     rsp, 8 + vp_stack
 
 // =============
 
@@ -394,29 +423,28 @@ relhi0:
 section         PEDEPHAK
                 mov     rbp, [rip + VirtualProtect]
                 lea     rdi, [rsi + vp_base]
-                mov     ebx, IMM32(vp_size)     // 0x1000 or 0x2000
+                mov     ebx, IMM32(vp_size)     // 0x1000 or 0x2000 (1 or 2 pages)
 
                 push    rax                     // provide 8 bytes stack
-                mov     r9, rsp
-// FIXME        push    4; pop     r8
-                mov     r8d, 4                  // PAGE_READWRITE
-                mov     rdx, rbx                // size
-                mov     rcx, rdi                // address
-
-                sub     rsp, 0x20
+                mov     r9, rsp                 // &oldProtect  (arg4)
+// FIXME        push PAGE_READWRITE; pop r8  // 2 bytes shorter
+                mov     r8d, PAGE_READWRITE     // (arg3)
+                mov     edx, ebx                // size (arg2)
+                mov     rcx, rdi                // address (arg1)
+                sub     rsp, vp_stack
                 call    rbp                     // VirtualProtect
 
                 lea     rax, [rdi + swri]
-                andb    [rax], 0x7f             // marks UPX0 non writeable
-                andb    [rax + 0x28], 0x7f      // marks UPX1 non writeable
+                andb    [                  rax], ~IMAGE_SCN_MEM_WRITE >> 24  // UPX0
+                andb    [sz_pe_section_t + rax], ~IMAGE_SCN_MEM_WRITE >> 24  // UPX1
 
-                lea     r9, [rsp + 0x20]
+                lea     r9, [rsp + vp_stack]
                 movq    r8, [r9]                // original protection
-                mov     rdx, rbx
+                mov     edx, ebx
                 mov     rcx, rdi
 
                 call    rbp
-                add     rsp, 0x28
+                add     rsp, 8 + vp_stack
 
 // =============
 // ============= TLS callback support part 1

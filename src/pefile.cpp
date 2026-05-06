@@ -2259,7 +2259,7 @@ unsigned PeFile::readSections(unsigned objs, unsigned usize, unsigned ih_fileali
     const unsigned xtrasize = UPX_MAX(ih_datasize, 65536u) + IDSIZE(PEDIR_IMPORT) +
                               IDSIZE(PEDIR_BOUND_IMPORT) + IDSIZE(PEDIR_IAT) +
                               IDSIZE(PEDIR_DELAY_IMPORT) + IDSIZE(PEDIR_BASERELOC);
-    ibuf.alloc(usize + xtrasize);
+    ibuf.alloc(ALIGN_UP(usize, ih_filealign) + xtrasize);
 
     // BOUND IMPORT support. FIXME: is this ok?
     ibufgood = isection[0].rawdataptr;
@@ -2282,7 +2282,8 @@ unsigned PeFile::readSections(unsigned objs, unsigned usize, unsigned ih_fileali
             continue;
         }
         if (isection[ic].vaddr + isection[ic].size > ALIGN_UP(usize, ih_filealign))
-            throwCantPack("section size problem");
+            throwCantPack("section %s [%#x, +%#x) > imagesize %#x", isection[ic].name,
+                          (unsigned) isection[ic].vaddr, (unsigned) isection[ic].size, usize);
         if (!isrtm && ((isection[ic].flags & (IMAGE_SCN_MEM_WRITE | IMAGE_SCN_MEM_SHARED)) ==
                        (IMAGE_SCN_MEM_WRITE | IMAGE_SCN_MEM_SHARED)))
             if (!opt->force)
@@ -2298,6 +2299,10 @@ unsigned PeFile::readSections(unsigned objs, unsigned usize, unsigned ih_fileali
         if (isection[ic].vaddr + jc > ibuf.getSize())
             throwInternalError("buffer too small 1");
         fi->readx(ibuf.subref("bad section %#x", isection[ic].vaddr, jc), jc);
+
+        // Subsumed by above ibuf.clear()
+        // ibuf.fill(jc + isection[ic].vaddr, isection[ic].size - jc, FILLVAL);
+
         ibufgood = upx::umax(ibufgood, jc + isection[ic].vaddr); // FIXME: simplistic
         jc += isection[ic].rawdataptr;
     }
@@ -2376,6 +2381,23 @@ void PeFile::pack0(OutputFile *fo, ht &ih, ht &oh, unsigned subsystem_mask,
     if (overlay >= file_size_u)
         overlay = 0;
     checkOverlay(overlay);
+
+    // Closed-source debugging tool 'madExcept' points to section .didata
+    // using the .virtal_address in the first BaseRelocation block.
+    // The first word in .didata is relocated, and begins the Section.
+    // Find and remember the address so that the upx stub can restore it.
+    // https://github.com/upx/upx/issues/251   http://www.madexcept.com/
+    for (unsigned ic = 0; ic < objs; ++ic) {
+        unsigned const vaddr = isection[ic].vaddr;
+        if (vaddr == IDADDR(PEDIR_BASERELOC)) {
+            unsigned x = get_le32(ibuf.subref("bad BaseReloc", vaddr, sizeof(vaddr)));
+            unsigned jc = virta2objnum(x, isection, objs);
+            if (jc < objs && !strncmp(".didata", isection[jc].name, 8)) {
+                didata = x;
+                NO_printf("BaseReloc=%d,%#x .didata=%d,%#x\n", ic, vaddr, jc, didata);
+            }
+        }
+    }
 
     if (ih.dllflags & IMAGE_DLLCHARACTERISTICS_GUARD_CF) {
         if (opt->force) {
