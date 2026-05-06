@@ -2387,10 +2387,7 @@ void PeFile::pack0(OutputFile *fo, ht &ih, ht &oh, unsigned subsystem_mask,
     // The first word in .didata is relocated, and begins the Section.
     // Find and remember the address so that the upx stub can restore it.
     // https://github.com/upx/upx/issues/251   http://www.madexcept.com/
-<<<<<<< HEAD
-=======
     didata = 0;
->>>>>>> 25bdf35b (TEST co-existence with madExcept)
     for (unsigned ic = 0; ic < objs; ++ic) {
         unsigned const vaddr = isection[ic].vaddr;
         if (vaddr == IDADDR(PEDIR_BASERELOC)) {
