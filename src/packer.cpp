@@ -49,6 +49,7 @@ Packer::Packer(InputFile *f) : PackerBase(f) { uip = new UiPacker(this); }
 Packer::~Packer() noexcept {
     upx::owner_delete(uip);
     upx::owner_delete(linker);
+    assert_noexcept(uip == nullptr);
     assert_noexcept(linker == nullptr);
 }
 

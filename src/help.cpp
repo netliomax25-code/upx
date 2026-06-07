@@ -195,6 +195,7 @@ struct PackerNames final {
 static noinline void list_all_packers(FILE *f, int verbose) {
     Options o;
     o.reset();
+    o.o_unix.use_ptinterp = true;
     PackerNames pn;
     pn.o = &o;
     (void) PackMaster::visitAllPackers(PackerNames::visit, nullptr, &o, &pn);

@@ -87,11 +87,11 @@ protected:
 
     byte ih[CMD_HDR_SIZE]; // original 128-byte header (kept verbatim for unpack)
     Group groups[CMD_NGROUPS];
-    int ngroups;
-    unsigned image_end; // file offset just past the last group's declared data
+    int ngroups = 0;
+    unsigned image_end = 0; // file offset just past the last group's declared data
     // convenience pointers into groups[] (nullptr if absent)
     const Group *grp_code, *grp_data, *grp_extra, *grp_stack;
-    bool model_8080;
+    bool model_8080 = false;
     // buildLoader links the in-place tail (CPMIP/CPMCOPY) only when this is set, so
     // method-0-only packs get a leaner loader (pack() clears it to fall back when
     // in-place would not meet the compression ratio).
